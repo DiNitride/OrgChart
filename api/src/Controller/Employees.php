@@ -174,6 +174,10 @@ Class Employees extends AbstractController {
             throw new BadRequestHttpException('One or more employee\'s does not exist');
         }
 
+        // This is required later when swapping children, but needs to be calculated prior to the
+        // employees position attributes swapping
+        $higher = $this->getHigherPosition($employeeA, $employeeB);
+
         // Swap parents
         $b_parent = $employeeB->getParent();
         $employeeB->setParent($employeeA->getParent());
@@ -190,8 +194,7 @@ Class Employees extends AbstractController {
             $temp = '1';
             // They are keeping children nodes, so now we need to work out whether that should be allowed.
             // If they are not of equal rank, we need to do further checks
-            $higher = $this->getHigherPosition($employeeA, $employeeB);
-            // If higher returns null, they are of equal rank, so child nodes can be transfered with no issues
+            // If higher returned null, they are of equal rank, so child nodes can be transfered with no issues
             if ($higher != null) {
                 // One of the two is of higher rank. Therefore to move and carry children, we must find out if
                 // they have any children nodes. If they do, the swap cannot happen, as demoting them would
@@ -248,12 +251,14 @@ Class Employees extends AbstractController {
         $newForename = $request->request->get('forename');
         $newSurname = $request->request->get('surname');
         $newPosition = $request->request->get('position');
-        $newJoiningDate = $request->request->get('joiningDate');        
+        $newJoiningDate = $request->request->get('joiningDate'); 
+        $newParent = $request->request->get('parent');      
 
         is_null($newForename) ?:$employee->setForename($newForename);
         is_null($newSurname) ?:$employee->setSurname($newSurname);
         is_null($newPosition) ?:$employee->setPosition($newPosition);
         is_null($newJoiningDate) ?:$employee->setJoiningDate($newJoiningDate);
+        is_null($newParent) ?:$employee->setParent($newParent); 
         
         $this->validateEmployee($dm, $employee);
 
