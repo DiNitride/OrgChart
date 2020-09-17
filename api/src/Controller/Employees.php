@@ -188,10 +188,7 @@ Class Employees extends AbstractController {
         $employeeB->setPosition($employeeA->getPosition());
         $employeeA->setPosition($b_position);
 
-        $temp;
-
         if ($keepChildren == true) {
-            $temp = '1';
             // They are keeping children nodes, so now we need to work out whether that should be allowed.
             // If they are not of equal rank, we need to do further checks
             // If higher returned null, they are of equal rank, so child nodes can be transfered with no issues
@@ -222,10 +219,7 @@ Class Employees extends AbstractController {
 
             foreach ($employeeBChildren as $child) {
                 $child->setParent($employeeA->getId());
-            }
-
-            $temp = '2';
-            
+            }            
         }
 
         $dm->flush();
@@ -233,8 +227,6 @@ Class Employees extends AbstractController {
             'action' => 'swapped',
             'a' => $employeeA->asArray(),
             'b' => $employeeB->asArray(),
-            'temp' => $temp,
-            'c' => $keepChildren
             ]);        
     }
 
