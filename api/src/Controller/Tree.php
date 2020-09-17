@@ -15,6 +15,10 @@ Class Tree extends AbstractController {
      * @Route("/", name="get_tree", methods={"GET"})
      */
     public function get_tree(DocumentManager $dm) {
+        // WIP
+        // Does not work
+        // Not sure what format the frontend will need the tree in so waiting
+        // to build that before I do this
         $employees = $dm->getRepository(Employee::class)->findAll();
         // hehe yoink
         // https://gist.github.com/vyspiansky/6552875
@@ -29,14 +33,6 @@ Class Tree extends AbstractController {
         return $childs[0];
         
         return $this->json(['tree' => []]);
-    }
-
-    /**
-     * @Route("/swap", name="swap", methods={"PATCH"})
-     */
-    public function swap_employees() {
-        // Swap two employees positions on the chart, inc children
-        return $this->json(['moved' => 'yes']);
     }
     
 }

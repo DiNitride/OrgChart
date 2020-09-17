@@ -157,6 +157,7 @@ Class Employees extends AbstractController {
      * @Route("/swap", name="swap", methods={"PATCH"})
      */
     public function swapEmployees(DocumentManager $dm, Request $request) {
+        // TODO: Clean this entire function up, it's way too big and a mess
         $employeeAId = $request->request->get('employee_a');
         $employeeBId = $request->request->get('employee_b');
         $keepChildren = $request->request->get('keep_children');
