@@ -81,8 +81,8 @@ class Employee {
         $this->position = $newPosition;
     }
 
-    public function setJoiningDate(string $newJoiningDate) {
-        $this->joiningdate = $newJoiningDate;
+    public function setJoiningDate(\DateTime $newJoiningDate) {
+        $this->joiningDate = $newJoiningDate;
     }
 
     public function setParent(int $newParent) {
@@ -96,7 +96,7 @@ class Employee {
             'forename' => $this->forename,
             'surname' => $this->surname,
             'position' => $this->position,
-            'joiningDate' => $this->joiningDate,
+            'joiningDate' => $this->joiningDate->format("Y-m-d"),
             'parent' => $this->parent,
         ];
 

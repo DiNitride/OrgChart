@@ -23,38 +23,9 @@ Class Employees extends AbstractController {
     ];
 
     /**
-     * Compares a string against the valid positions array
-     */
-    private function validPosition(string $position) {
-        foreach ($this->positions as $key => $value) {
-            if ($position == $key) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Compares two employee objects and returns the one that is the highest position
-     * Returns null if they are equal
-     */
-    private function getHigherPosition(Employee $a, Employee $b) {
-        if ($this->positions[$a->getPosition()] < $this->positions[$b->getPosition()]) {
-            // B is higher position
-            return $b;
-        } else if ($this->positions[$a->getPosition()] > $this->positions[$b->getPosition()]) {
-            // A is higher position
-            return $a;
-        } else {
-            // They are equal
-            return null;
-        }
-    }
-
-    /**
      * @Route("/", name="get_all", methods={"GET"})
      */
-    public function get_all_employees(DocumentManager $dm) {
+    public function getAllEmployees(DocumentManager $dm) {
         $employees_cursor = $dm->getRepository(Employee::class)->findAll();
         $employees = [];
         foreach($employees_cursor as $employee) {
@@ -66,7 +37,7 @@ Class Employees extends AbstractController {
     /**
      * @Route("/{id}", name="get", methods={"GET"})
      */
-    public function get_employee(DocumentManager $dm, string $id) {
+    public function getEmployee(DocumentManager $dm, string $id) {
         $employee = $dm->getRepository(Employee::class)->find($id);
 
         if (!$employee) {
@@ -82,7 +53,7 @@ Class Employees extends AbstractController {
     /**
      * @Route("/{id}", name="delete", methods={"DELETE"})
      */
-    public function delete_employee(DocumentManager $dm, string $id) {
+    public function deleteEmployee(DocumentManager $dm, string $id) {
         // Get Employee from DB
         $employee = $dm->getRepository(Employee::class)->find($id);
         
@@ -108,7 +79,7 @@ Class Employees extends AbstractController {
     /**
      * @Route("/", name="create", methods={"POST"})
      */
-    public function create_employee(DocumentManager $dm, Request $request) {
+    public function createEmployee(DocumentManager $dm, Request $request) {
 
         // Move from request body to local variables for convinience
         $forename = $request->request->get('forename');
@@ -133,6 +104,7 @@ Class Employees extends AbstractController {
             throw new BadRequestHttpException($message);
         }
 
+        $joiningDate = $this->stringToDateTime($joiningDate);
         // Create employee
         $employee = new Employee();
         $employee->setForename($forename);
@@ -148,29 +120,34 @@ Class Employees extends AbstractController {
         $dm->persist($employee);
         $dm->flush();
         
-        return $this->json(
-            ['employee' => $employee->asArray(), 'action' => 'created']
+        return $this->json([
+                'employee' => $employee->asArray(),
+                'action' => 'created'
+            ]
         );
     }
 
     /**
      * @Route("/swap", name="swap", methods={"PATCH"})
      */
-    public function swapEmployees(DocumentManager $dm, Request $request) {
+    public function swapEmployee(DocumentManager $dm, Request $request) {
         // TODO: Clean this entire function up, it's way too big and a mess
         $employeeAId = $request->request->get('employee_a');
         $employeeBId = $request->request->get('employee_b');
-        $keepChildren = $request->request->get('keep_children');
-
+        
+        // Validate both employee ID's have been sent
         if (is_null($employeeAId) || is_null($employeeBId)) {
             throw new BadRequestHttpException('Missing employee IDs in request body');
         }
 
-        $keepChildren = is_null($keepChildren) ? $keepChildren = false : ($keepChildren == 'true' ? $keepChildren = true : $keepChildren = false);
+        // Check if the keep_children value has been sent. Defaults to false
+        $keepChildren = $request->request->get('keep_children');
+        $keepChildren = is_null($keepChildren) ? $keepChildren = false :
+        ($keepChildren == 'true' ? $keepChildren = true : $keepChildren = false);
 
+        // Fetch employees from DB
         $employeeA = $dm->getRepository(Employee::class)->find($employeeAId);
         $employeeB = $dm->getRepository(Employee::class)->find($employeeBId);
-
         if (!$employeeA || !$employeeB) {
             throw new BadRequestHttpException('One or more employee\'s does not exist');
         }
@@ -234,7 +211,7 @@ Class Employees extends AbstractController {
     /**
      * @Route("/{id}", name="edit", methods={"PATCH"})
      */
-    public function edit_employee(DocumentManager $dm, Request $request, string $id) {
+    public function editEmployee(DocumentManager $dm, Request $request, string $id) {
         $employee = $dm->getRepository(Employee::class)->find($id);
 
         if (!$employee) {
@@ -256,12 +233,47 @@ Class Employees extends AbstractController {
         $this->validateEmployee($dm, $employee);
 
         $dm->flush();
-        // Edit the relevant employee in DB
+
         return $this->json(
             ['employee' => $employee->asArray(), 'action' => 'updated']
         );
     }
 
+    /////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * Compares a string against the valid positions array
+     */
+    private function validPosition(string $position) {
+        foreach ($this->positions as $key => $value) {
+            if ($position == $key) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Compares two employee objects and returns the one that is the highest position
+     * Returns null if they are equal
+     */
+    private function getHigherPosition(Employee $a, Employee $b) {
+        if ($this->positions[$a->getPosition()] < $this->positions[$b->getPosition()]) {
+            // B is higher position
+            return $b;
+        } else if ($this->positions[$a->getPosition()] > $this->positions[$b->getPosition()]) {
+            // A is higher position
+            return $a;
+        } else {
+            // They are equal
+            return null;
+        }
+    }
+
+    /**
+     * Validated an employee object to ensure it complies with the hierachy
+     * structure and it's values are valid
+     */
     private function validateEmployee(DocumentManager $dm, Employee $employee) {
         // Validate the position String is a real position
         if (!$this->validPosition($employee->getPosition())) {
@@ -286,6 +298,15 @@ Class Employees extends AbstractController {
         }
     }
 
+    private function stringToDateTime(String $dateString) {
+        $dateString = $dateString . " 09:00:00";
+        $date = \DateTime::createFromFormat("Y-m-d H:i:s", $dateString);
+        if (!$date) {
+            throw new BadRequestHttpException('Invalid date format. Format must be YYYY-MM-DD');
+        } else {
+            return $date;
+        }
+    }
     
     
 }
