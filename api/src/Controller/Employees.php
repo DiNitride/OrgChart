@@ -51,6 +51,19 @@ Class Employees extends AbstractController {
     }
 
     /**
+     * @Route("/", name="delete_all", methods={"DELETE"})
+     */
+    public function deleteAll(DocumentManager $dm) {
+        $employees_cursor = $dm->getRepository(Employee::class)->findAll();
+        $employees = [];
+        foreach($employees_cursor as $employee) {
+            $dm->remove($employee);
+        }
+        $dm->flush();
+        return $this->json(['employees' => "yeeted"]);
+    }
+
+    /**
      * @Route("/{id}", name="delete", methods={"DELETE"})
      */
     public function deleteEmployee(DocumentManager $dm, string $id) {
@@ -291,11 +304,14 @@ Class Employees extends AbstractController {
 
         // Validate that the parent exists and is not above them
         $parentEmployee = $dm->getRepository(Employee::Class)->find($employee->getParent());
-        if (!$parentEmployee && $employee->getPosition() != 'CEO') {
-            throw new BadRequestHttpException('Parent does not exist');  
-        } else if ($this->positions[$employee->getPosition()] >= $this->positions[$parentEmployee->getPosition()]) {
-            throw new BadRequestHttpException('Parent cannot be of same position or below');
+        if ($employee->getPosition() != 'CEO') {
+            if (!$parentEmployee) {
+                throw new BadRequestHttpException('Parent does not exist');  
+            } else if ($this->positions[$employee->getPosition()] >= $this->positions[$parentEmployee->getPosition()]) {
+                throw new BadRequestHttpException('Parent cannot be of same position or below');
+            }
         }
+        
     }
 
     private function stringToDateTime(String $dateString) {
