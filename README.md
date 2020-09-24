@@ -2,6 +2,15 @@
 
 A simple Organisation Chart, with a backend API writting in PHP using Symfony, and a frontend 
 
+### TODO
+- Tests
+- Create Employee dialogue
+- Error feedback
+
+### Issues
+- Swapping employees while keeping children sometimes fails where it shouldn't, where a swapped employee would demote but it would not break heirachy
+- Swapping breaks if you swap a child and parent, it simply obliterates both out of existence
+
 ### Setup: API Backend
 ##### Prerequisites
 - MongoDB
@@ -56,3 +65,21 @@ For Development
 Make requests to `localhost:8000`
 
 See [Symfony Documentation](https://symfony.com/doc/current/index.html) for Production deployment
+
+### Setup: Frontend
+##### Prerequisites
+- NodeJS
+- npm
+
+##### Install
+```
+> git clone www.github.com/DiNitride/OrgChart
+> cd OrgChart/web
+> npm install
+```
+
+##### Run
+This will start the Mongo instance in Docker, start the Symfony server, then boot the React app.
+```
+npm start
+```
