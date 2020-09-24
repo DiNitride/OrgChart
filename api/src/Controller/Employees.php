@@ -145,6 +145,8 @@ Class Employees extends AbstractController {
      */
     public function swapEmployee(DocumentManager $dm, Request $request) {
         // TODO: Clean this entire function up, it's way too big and a mess
+        // TODO: THIS BREAKS WHEN SWAPING A PARENT AND CHILD
+        // TODO: THIS BREAKS WHEN SWAPPING AND MOVING CHILDREN SOMETIMES
         $employeeAId = $request->request->get('employee_a');
         $employeeBId = $request->request->get('employee_b');
         
