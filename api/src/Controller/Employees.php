@@ -237,6 +237,8 @@ Class Employees extends AbstractController {
         $newJoiningDate = $request->request->get('joiningDate'); 
         $newParent = $request->request->get('parent');      
 
+        is_null($newJoiningDate) ?: $newJoiningDate = $this->stringToDateTime($newJoiningDate);
+
         is_null($newForename) ?:$employee->setForename($newForename);
         is_null($newSurname) ?:$employee->setSurname($newSurname);
         is_null($newPosition) ?:$employee->setPosition($newPosition);
@@ -318,7 +320,7 @@ Class Employees extends AbstractController {
         $dateString = $dateString . " 09:00:00";
         $date = \DateTime::createFromFormat("Y-m-d H:i:s", $dateString);
         if (!$date) {
-            throw new BadRequestHttpException('Invalid date format. Format must be YYYY-MM-DD');
+            throw new BadRequestHttpException('Invalid date format. Format must be YYYY-MM-DD  ' . $dateString);
         } else {
             return $date;
         }

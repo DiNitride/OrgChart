@@ -11,3 +11,25 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+.modalBase {
+  min-width: 100%;
+  min-height: 100%;
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.4);
+}
+
+.modalButton {
+  margin: 2px;
+  padding: 5px;
+}
+
+.modalFormLabel {
+  margin: 3px;
+  margin-right: 10px;
+  width: 200px;
+}

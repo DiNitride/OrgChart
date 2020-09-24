@@ -1,0 +1,19 @@
+.modal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  max-width: 500px;
+  padding: 20px;
+  border-radius: 5px;
+  background-color: white;
+}
+
+.modalExitButton {
+  float: right;
+}
+
+.employeeName {
+  width: 80%;
+}

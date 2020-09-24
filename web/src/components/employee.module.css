@@ -1,0 +1,26 @@
+.employeeBox {
+  text-align: center;
+  margin: 20px;
+  border: dashed 1px black;
+  padding: 5px;
+}
+
+.childrenBox {
+  display: flex;
+  flex-grow: 1;
+  justify-content: space-around;
+  min-height: 50px;
+}
+
+.employeeDetails {
+  padding: 10px;
+  border: solid 1px black;
+}
+
+.employeeDetails:hover {
+  background-color: rgba(123,123,123,0.5);
+}
+
+.draggedOver {
+  background-color: rgba(111,255,0,0.5);
+}
