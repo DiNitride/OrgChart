@@ -2,6 +2,12 @@ import React from 'react';
 import Employee from './components/employee'
 import EditModal from './components/editModal'
 import SwapModal from './components/swapModal'
+import CreateModal from './components/createModal'
+import Menu from './components/menu'
+import Error from './components/error'
+import './api/employees'
+import { getAllEmployees, getEmployee } from './api/employees';
+import { buildTrees } from './utils/tree'
 
 class App extends React.Component {
 
@@ -16,131 +22,59 @@ class App extends React.Component {
   constructor() {
     super()
     this.state = {
-      employees: [],
-      root: null,
+      trees: [],
       modalOpen: false,
       modal: null,
       a: null,
       b: null,
+      error: null
     }
   }
 
-  async getChildren(parent, employees) {
-    let children = []
-    employees.forEach(async (employee, index) => {
-      if ((employee.parent) === parent) {
-        employee.children = await this.getChildren(parseInt(employee.id), employees)
-        children.push(employee)
-      }
+  refreshTrees() {
+    console.log("Refreshing...")
+    getAllEmployees()
+    .then((resp) => {
+      console.log("Got refreshed employees")
+      let trees = buildTrees(resp.employees)
+      console.log("Built tree")
+      this.setState({'trees': trees})
     })
-    return children;
-  }
-
-  async refresh() {
-    const resp = await fetch(
-      "http://localhost:8000/employees/"
-    )
-    const json = await resp.json()
-    let employees = json.employees
-
-    employees.sort((a,b) => {
-      return this.positionHeirachy[a.position] - this.positionHeirachy[b.position]
-    })
-
-    employees.reverse() // CEO to top
-    let ceo = employees.shift() // Get CEO/root
-    ceo.children = await this.getChildren(parseInt(ceo.id), employees) // Construct children arrays recursively
-
-    this.setState({employees: employees, root: ceo})
+    .catch((error) => this.setError(error.message))
   }
 
   async componentDidMount() {
-    await this.refresh()
+    console.log("Mounted, refreshing trees")
+    this.refreshTrees()
   }
 
-  async swap(employeeA, employeeB, keepChildren) {
-    console.log("Swap")
-
-    const respSwap = await fetch("http://localhost:8000/employees/swap",
-    {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: "employee_a=" + encodeURIComponent(employeeA.id) +
-            "&employee_b=" + encodeURIComponent(employeeB.id) +
-            "&keep_children=" + encodeURIComponent(keepChildren) 
-    })
-
-    if (respSwap.status === 200) {
-      const json = await respSwap.json()
-      console.log(json)
-    }
-    await this.refresh()
+  clearError() {
+    this.setState({error: null})
   }
 
-  async edit(employee) {
+  setError(message) {
+    console.log("Set error to " + message)
+    this.setState({error: message})
+  }
 
-    const respEdit = await fetch("http://localhost:8000/employees/" + employee.id,
-    {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: "surname=" + encodeURIComponent(employee.surname) +
-            "&forename=" + encodeURIComponent(employee.forename) +
-            "&position=" + encodeURIComponent(employee.position) +
-            "&joiningDate=" + encodeURIComponent(employee.joiningDate) +
-            "&parent=" + encodeURIComponent(employee.parent)
-    })
-
-    if (respEdit.status === 200) {
-      const json = await respEdit.json()
-      console.log(json)
-    }
-    await this.refresh()
+  openEditModal(employee) {
+    this.setState({'modalOpen': true, 'modal': 0, 'a': employee})
+  }
+  
+  openSwapModal(employeeA, employeeB) {
+    employeeA = getEmployee(employeeA)
+    .then(
+      this.setState({'modalOpen': true, 'modal': 1, 'a': employeeA, 'b': employeeB})
+    )
     
   }
 
-  async delete(employee) {
-    console.log('Deleted employee ' + employee);
+  openCreateModal(parentId) {
+    this.setState({'modalOpen': true, 'modal': 2, 'create_parent': parentId})
   }
 
-  async openEditModal(employee) {
-    this.setState({
-      'modalOpen': true,
-      'modal': 0,
-      'a': employee
-    })
-  }
-
-  getEmployeeFromId(id) {
-    let matches = this.state.employees.filter((employee) => {
-      if (employee.id === id) {
-        return true
-      }
-      return false
-    })
-    return matches[0]
-  }
-
-  async openSwapModal(employeeA, employeeB) {
-    employeeA = this.getEmployeeFromId(employeeA)
-    this.setState({
-      'modalOpen': true,
-      'modal': 1,
-      'a': employeeA,
-      'b': employeeB
-    })
-  }
-
-  async closeModal() {
-    this.setState({
-      'modalOpen': false,
-      'modal': null,
-      'a': null,
-      'b': null
-    })
+  closeModal() {
+    this.setState({'modalOpen': false, 'modal': null, 'a': null, 'b': null, 'create_parent': null})
   }
 
   render() {
@@ -150,29 +84,56 @@ class App extends React.Component {
           <div className={'modalBase'}>
             {this.state.modal === 0 &&
               <EditModal
-                editHandler={(employee) => this.edit(employee)}
                 employee={this.state.a}
                 handleClose={() => this.closeModal()}
+                handleError={(error) => this.setError(error)}
+                refresh={() => this.refreshTrees()}
               />
             }
             {this.state.modal === 1 &&
               <SwapModal
-                editHandler={(employee) => this.edit(employee)}
-                swapHandler={(a,b,keepChildren) => this.swap(a,b,keepChildren)}
                 employeeA={this.state.a}
                 employeeB={this.state.b}
                 handleClose={() => this.closeModal()}
+                handleError={(error) => this.setError(error)}
+                refresh={() => this.refreshTrees()}
+              />
+            }
+            {this.state.modal === 2 &&
+              <CreateModal
+                parentId={this.state.create_parent}
+                handleClose={() => this.closeModal()}
+                handleError={(error) => this.setError(error)}
+                refresh={() => this.refreshTrees()}
               />
             }
           </div>
         }
         
-        {this.state.root !== null &&
-          <Employee
-            openSwapModal={(a,b) => this.openSwapModal(a,b)} 
-            openEditModal={(employee) => this.openEditModal(employee)}
-            employee={this.state.root}>
-          </Employee>}
+        {this.state.error !== null &&
+          <Error
+            errorMessage={this.state.error}
+            handleExit={() => this.clearError()}
+          />
+        }
+
+        {
+          this.state.trees.map((root, index) => {
+            return <Employee
+              key={root.id}
+              openSwapModal={(a,b) => this.openSwapModal(a,b)} 
+              openEditModal={(employee) => this.openEditModal(employee)}
+              openCreateModal={(parentId) => this.openCreateModal(parentId)}
+              employee={root}
+            />
+          })
+        }
+        
+
+        <Menu
+          refresh={() => this.refreshTrees()}
+        />
+        
       </div>
     )
   }

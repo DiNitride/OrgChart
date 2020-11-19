@@ -1,0 +1,11 @@
+.errorBar {
+  width: 100%;
+  height: 50px;
+  padding: 10px;
+  background-color: red;
+}
+
+.exitButton {
+  float: right;
+  margin-right: 30px;
+}

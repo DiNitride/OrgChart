@@ -5,6 +5,7 @@ namespace App\Controller;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use App\Document\Employee;
 use Doctrine\ODM\MongoDB\DocumentManager;
@@ -73,11 +74,11 @@ Class Employees extends AbstractController {
         // If any employees have this employee as their parent, they cannot be deleted
         $childEmployees = $dm->getRepository(Employee::class)->findBy(['parent' => $id]);
         if (!empty($childEmployees)) {
-            throw new BadRequestHttpException('Cannot delete employee who still has children nodes');
+            $this->BadRequestError('Cannot delete employee who still has children nodes');
         }
 
         if (!$employee) {
-            throw $this->createNotFoundException('Could not delete employee of ID ' . $id . ' as they did not exist');
+            throw $this->BadRequestError('Could not delete employee of ID ' . $id . ' as they did not exist');
         } else {
             // Delete employee
             $dm->remove($employee);
@@ -114,7 +115,7 @@ Class Employees extends AbstractController {
             foreach ($missingFields as $field) {
                 $message = $message . $field . ', ';
             }
-            throw new BadRequestHttpException($message);
+            $this->BadRequestError($message);
         }
 
         $joiningDate = $this->stringToDateTime($joiningDate);
@@ -144,18 +145,13 @@ Class Employees extends AbstractController {
      * @Route("/swap", name="swap", methods={"PATCH"})
      */
     public function swapEmployee(DocumentManager $dm, Request $request) {
-        // TODO: Clean this entire function up, it's way too big and a mess
-        // TODO: THIS BREAKS WHEN SWAPING A PARENT AND CHILD
-        // TODO: THIS BREAKS WHEN SWAPPING AND MOVING CHILDREN SOMETIMES
         $employeeAId = $request->request->get('employee_a');
         $employeeBId = $request->request->get('employee_b');
         
-        // Validate both employee ID's have been sent
         if (is_null($employeeAId) || is_null($employeeBId)) {
-            throw new BadRequestHttpException('Missing employee IDs in request body');
+            $this->BadRequestError('Missing employee IDs in request body');
         }
 
-        // Check if the keep_children value has been sent. Defaults to false
         $keepChildren = $request->request->get('keep_children');
         $keepChildren = is_null($keepChildren) ? $keepChildren = false :
         ($keepChildren == 'true' ? $keepChildren = true : $keepChildren = false);
@@ -164,8 +160,12 @@ Class Employees extends AbstractController {
         $employeeA = $dm->getRepository(Employee::class)->find($employeeAId);
         $employeeB = $dm->getRepository(Employee::class)->find($employeeBId);
         if (!$employeeA || !$employeeB) {
-            throw new BadRequestHttpException('One or more employee\'s does not exist');
+            $this->BadRequestError('One or more employee\'s does not exist');
         }
+
+        // 3 types of swap
+        // parent-child
+        // 
 
         // This is required later when swapping children, but needs to be calculated prior to the
         // employees position attributes swapping
@@ -182,17 +182,11 @@ Class Employees extends AbstractController {
         $employeeA->setPosition($b_position);
 
         if ($keepChildren == true) {
-            // They are keeping children nodes, so now we need to work out whether that should be allowed.
-            // If they are not of equal rank, we need to do further checks
-            // If higher returned null, they are of equal rank, so child nodes can be transfered with no issues
             if ($higher != null) {
-                // One of the two is of higher rank. Therefore to move and carry children, we must find out if
-                // they have any children nodes. If they do, the swap cannot happen, as demoting them would
-                // break the heirachy of the tree, as they would be the same rank as their child nodes.
                 $higher_children = $dm->getRepository(Employee::class)->findBy(['parent' => $higher->getId()]);
                 if ($higher_children) {
                     // They do have child nodes, swap cannot happen!
-                    throw new BadRequestHttpException(
+                    $this->BadRequestError(
                         'Employee ' . $higher->getId() .
                         ' has children. This swap would demote them, causing the ' .
                         'heirachy to be broken. Please remove their children to continue.'
@@ -200,9 +194,6 @@ Class Employees extends AbstractController {
                 }
             }
         } else {
-            // They are not keeping children, so sub-trees must be swapped.
-            // To do this, I can just swap the parent of any children nodes
-            // TODO: This can probably be condensed and cleaned up
             $employeeAChildren = $dm->getRepository(Employee::class)->findBy(['parent' => $employeeA->getId()]);
             $employeeBChildren = $dm->getRepository(Employee::class)->findBy(['parent' => $employeeB->getId()]);
 
@@ -294,25 +285,25 @@ Class Employees extends AbstractController {
     private function validateEmployee(DocumentManager $dm, Employee $employee) {
         // Validate the position String is a real position
         if (!$this->validPosition($employee->getPosition())) {
-            throw new BadRequestHttpException('Invalid Position String');
+            $this->BadRequestError('Invalid Position String');
         } 
 
         // Validate that there is not already a CEO
         // Remove/comment this block to allow multiple CEO's in the chart
-        if ($employee->getPosition() == 'CEO') {
-            $ceoExists = $dm->getRepository(Employee::Class)->findBy(['position' => 'CEO']);
-            if ($ceoExists) {
-                throw new BadRequestHttpException('CEO position already exists');
-            }
-        }
+        // if ($employee->getPosition() == 'CEO') {
+        //     $ceoExists = $dm->getRepository(Employee::Class)->findBy(['position' => 'CEO']);
+        //     if ($ceoExists) {
+        //         $this->BadRequestError('CEO position already exists');
+        //     }
+        // }
 
         // Validate that the parent exists and is not above them
         $parentEmployee = $dm->getRepository(Employee::Class)->find($employee->getParent());
         if ($employee->getPosition() != 'CEO') {
             if (!$parentEmployee) {
-                throw new BadRequestHttpException('Parent does not exist');  
+                $this->BadRequestError('Parent does not exist');  
             } else if ($this->positions[$employee->getPosition()] >= $this->positions[$parentEmployee->getPosition()]) {
-                throw new BadRequestHttpException('Parent cannot be of same position or below');
+                $this->BadRequestError('Parent cannot be of same position or below');
             }
         }
         
@@ -322,11 +313,19 @@ Class Employees extends AbstractController {
         $dateString = $dateString . " 09:00:00";
         $date = \DateTime::createFromFormat("Y-m-d H:i:s", $dateString);
         if (!$date) {
-            throw new BadRequestHttpException('Invalid date format. Format must be YYYY-MM-DD  ' . $dateString);
+            $this->BadRequestError('Invalid date format. Format must be YYYY-MM-DD  ' . $dateString);
         } else {
             return $date;
         }
     }
     
-    
+    private function BadRequestError(String $message) {
+        $resp = new Response(
+            $message,
+            Response::HTTP_BAD_REQUEST,
+            ['content-type' => 'text/html']
+        );
+        $resp->send();
+        return;
+    }
 }

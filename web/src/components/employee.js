@@ -13,9 +13,13 @@ class Employee extends React.Component {
   handleDrop(e, employee) {
     let id = e.dataTransfer.getData('id')
     this.setState({'draggedOver': false})
-    console.log(id + ' dropped on employee ' + employee)
-    this.props.openSwapModal(id, employee)
-
+    if (id === 'create') {
+      // Creating new employee with this as parent
+      this.props.openCreateModal(this.props.employee.id)
+    } else {
+      console.log(id + ' dropped on employee ' + employee.id)
+      this.props.openSwapModal(id, employee)
+    }
   }
 
   handleDragStart(e) {
@@ -65,8 +69,9 @@ class Employee extends React.Component {
               key={child.id}
               openEditModal={(employee) => this.props.openEditModal(employee)}
               openSwapModal={(a,b) => this.props.openSwapModal(a,b)}
-              employee={child}>  
-            </Employee>
+              openCreateModal={(parentId) => this.props.openCreateModal(parentId)}
+              employee={child}
+            />
           })}
         </div>
         

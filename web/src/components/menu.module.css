@@ -1,0 +1,15 @@
+.menuBox {
+  margin: 20px;
+  display: flex;
+}
+
+.deleteBox, .createBox {
+  padding: 30px;
+  width: 200px;
+  border: solid 1px black;
+  margin-right: 20px;
+}
+
+.deleteBox:hover, .createBox:hover {
+  background-color: rgba(123,123,123,0.5);
+}

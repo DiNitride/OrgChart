@@ -4,8 +4,6 @@ A simple Organisation Chart, with a backend API writting in PHP using Symfony, a
 
 ### TODO
 - Tests
-- Create Employee dialogue
-- Error feedback
 
 ### Issues
 - Swapping employees while keeping children sometimes fails where it shouldn't, where a swapped employee would demote but it would not break heirachy

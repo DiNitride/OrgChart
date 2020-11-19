@@ -1,17 +1,17 @@
 import React from 'react'
 import styles from './editModal.module.css'
-import { editEmployee } from '../api/employees'
+import { createEmployee } from '../api/employees'
 
 class EditModal extends React.Component {
 
   constructor(props) {
     super(props)
     this.state = {
-      forename: props.employee.forename,
-      surname: props.employee.surname,
-      position: props.employee.position,
-      joiningDate: props.employee.joiningDate
-
+      parent: props.parentId,
+      forename: "",
+      surname: "",
+      position: "TM",
+      joiningDate: ""
     }
 
     this.handleForenameChange = this.handleForenameChange.bind(this)
@@ -22,7 +22,6 @@ class EditModal extends React.Component {
   }
 
   handleForenameChange(event) {
-
     this.setState({forename: event.target.value})
   }
 
@@ -42,27 +41,30 @@ class EditModal extends React.Component {
   handleSubmit(event) {
     event.preventDefault()
     let employee = {
-      id: this.props.employee.id,
       forename: this.state.forename,
       surname: this.state.surname,
       position: this.state.position,
       joiningDate: this.state.joiningDate,
-      parent: this.props.employee.parent
+      parent: this.props.parentId
     }
-    editEmployee(employee)
+    createEmployee(employee)
+    .then((json) => {
+      this.props.refresh()
+      this.props.handleClose()
+    }) 
     .catch((error) => {
       this.props.handleError(error.message)
     })
-    this.props.refresh()
-    this.props.handleClose()
+
   }
 
   render() {
     return (
       <div className={styles.modal}>
+
         <div className={styles.modalTitle}>
           <button className={styles.modalExitButton} onClick={this.props.handleClose}>X</button>
-          <h3 className={styles.employeeName} >Editing {this.props.employee.forename} {this.props.employee.surname} details</h3>
+          <h3 className={styles.employeeName} >Creating new employee</h3>
         </div>
         <form onSubmit={this.handleSubmit}>
           <label className={'modalFormLabel'}>Forename</label>

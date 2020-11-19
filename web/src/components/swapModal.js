@@ -1,5 +1,6 @@
 import React from 'react'
 import styles from './editModal.module.css'
+import { swapEmployees, editEmployee, getEmployee } from '../api/employees'
 
 class EditModal extends React.Component {
 
@@ -8,7 +9,6 @@ class EditModal extends React.Component {
     this.state = {
       action: 'swap',
       keepChildren: false,
-
     }
 
     this.handleKeepChildrenChange = this.handleKeepChildrenChange.bind(this)
@@ -23,15 +23,42 @@ class EditModal extends React.Component {
   handleSubmit(e) {
     e.preventDefault()
     if (this.state.action === 'swap') {
-      this.props.swapHandler(this.props.employeeA, this.props.employeeB, this.state.keepChildren)
+      this.handleSwap(e)
     } else if (this.state.action === 'child') {
-      let e = this.props.employeeA
-      e.parent = this.props.employeeB.id
-      this.props.editHandler(e)
+      this.handleMoveToChild(e)
     }
+
+  }
+
+  handleSwap() {
+    swapEmployees(this.props.employeeA, this.props.employeeB.id, this.state.keepChildren)
+    .then(() => {
+      this.handleClose()
+    }) 
+    .catch((error) => {
+      this.props.handleError(error.message)
+    })
+  }
+
+  handleMoveToChild() {
+    getEmployee(this.props.employeeA)
+    .then((e) => {
+      e.employee.parent = this.props.employeeB.id
+      editEmployee(e.employee)
+      .then(() => {
+        this.handleClose()
+      }) 
+      .catch((error) => {
+        this.props.handleError(error.message)
+      })
+    })
+  }
+
+  handleClose() {
+    this.props.refresh()
     this.props.handleClose()
   }
-  
+
   handleActionChange(e) {
     this.setState({action: e.target.value})
   }
